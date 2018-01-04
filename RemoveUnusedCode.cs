@@ -63,7 +63,7 @@ namespace RemoveUnusedCodeVSPackage
                         for (int i = 0; i < Elements.Count; ++i)
                         {
                             FragmentNames[i] = Elements[i].Name;
-                            FragmentTexts[i] = Elements[i].StartPointOf[vsCMPart.vsCMPartWholeWithAttributes, vsCMWhere.vsCMWhereDefault].CreateEditPoint().GetText(Elements[i].EndPoint);
+                            FragmentTexts[i] = Elements[i].StartPoint.CreateEditPoint().GetText(Elements[i].EndPoint);
                             if (!IsNotTrash.ContainsKey(Elements[i].Name))
                                 IsNotTrash.Add(Elements[i].Name, Elements[i].Name == "main");
 
@@ -115,21 +115,33 @@ namespace RemoveUnusedCodeVSPackage
 
         private List<VCCodeElement> ScanElements(VCCodeElements elements)
         {
-            List<VCCodeElement> result = new List<VCCodeElement>();
+            Queue<VCCodeElement> QueueElements = new Queue<VCCodeElement>();
             foreach (VCCodeElement Element in elements)
+                QueueElements.Enqueue(Element);
+            List<VCCodeElement> result = new List<VCCodeElement>();
+            while (QueueElements.Count != 0 )
             {
+                VCCodeElement Element = QueueElements.Dequeue();
                 switch (Element.Kind)
                 {
+                    case vsCMElement.vsCMElementStruct:
+                        result.Add(Element);
+                        VCCodeElements children = (VCCodeElements)Element.Children;
+                        foreach (VCCodeElement childElement in children)
+                            QueueElements.Enqueue(childElement);
+                        break;
                     case vsCMElement.vsCMElementClass:
                     case vsCMElement.vsCMElementEnum:
                     case vsCMElement.vsCMElementFunction:
                     case vsCMElement.vsCMElementMacro:
-                    case vsCMElement.vsCMElementStruct:
                     case vsCMElement.vsCMElementTypeDef:
                     case vsCMElement.vsCMElementVariable:
                         result.Add(Element);
                         break;
+                    case vsCMElement.vsCMElementIncludeStmt:
+                        break;
                     default:
+                        MessageBox.Show(Element.Kind.ToString());
                         break;
                 }
             }
